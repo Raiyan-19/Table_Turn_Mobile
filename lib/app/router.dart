@@ -1,5 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/models/user_model.dart';
 import '../features/admin/presentation/admin_dashboard_screen.dart';
 import '../features/admin/presentation/restaurant_management_screen.dart';
 import '../features/admin/presentation/user_management_screen.dart';
@@ -7,6 +9,7 @@ import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/otp_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
+import '../features/auth/providers/auth_provider.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/manager/presentation/manager_dashboard_screen.dart';
 import '../features/manager/presentation/manager_reservations_screen.dart';
@@ -28,9 +31,26 @@ import '../features/search/presentation/search_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/success/presentation/success_screen.dart';
 
-final appRouter = GoRouter(
-  initialLocation: '/splash',
-  routes: [
+GoRouter createAppRouter([Ref? ref]) {
+  return GoRouter(
+    initialLocation: '/splash',
+    redirect: (context, state) {
+      if (ref == null) return null;
+      final authState = ref.read(authProvider);
+      final location = state.matchedLocation;
+      final role = authState.currentRole;
+
+      // Route authorization guard: Protect admin endpoints
+      if (location.startsWith('/admin') && role != UserRole.admin) {
+        return '/home';
+      }
+      // Route authorization guard: Protect manager endpoints
+      if (location.startsWith('/manager') && role != UserRole.manager) {
+        return '/home';
+      }
+      return null;
+    },
+    routes: [
     // 1. Initial Authentication & Onboarding Routes
     GoRoute(
       path: '/splash',
@@ -162,3 +182,10 @@ final appRouter = GoRouter(
     ),
   ],
 );
+}
+
+final routerProvider = Provider<GoRouter>((ref) {
+  return createAppRouter(ref);
+});
+
+final appRouter = createAppRouter();

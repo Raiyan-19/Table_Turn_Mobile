@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -105,62 +106,63 @@ class ProfileScreen extends ConsumerWidget {
 
             const SizedBox(height: 20),
 
-            // Demo Role Switcher Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.swap_horiz, color: AppColors.primaryGreen),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Switch System Role (Evaluation)',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+            // Demo Role Switcher Section (Protected: Active in Debug & Evaluation Builds Only)
+            if (kDebugMode) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.swap_horiz, color: AppColors.primaryGreen),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Switch System Role (Debug Only)',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildRoleRadio(
-                    context,
-                    ref,
-                    title: 'Customer Mode',
-                    subtitle: 'Discover restaurants, make reservations, view QR passes',
-                    role: UserRole.customer,
-                    currentRole: user.role,
-                  ),
-                  const Divider(height: 16),
-                  _buildRoleRadio(
-                    context,
-                    ref,
-                    title: 'Restaurant Manager Mode',
-                    subtitle: 'Manage tables, live guest check-in, QR camera scanner',
-                    role: UserRole.manager,
-                    currentRole: user.role,
-                  ),
-                  const Divider(height: 16),
-                  _buildRoleRadio(
-                    context,
-                    ref,
-                    title: 'Administrator Mode',
-                    subtitle: 'Platform analytics, user & restaurant oversight',
-                    role: UserRole.admin,
-                    currentRole: user.role,
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildRoleRadio(
+                      context,
+                      ref,
+                      title: 'Customer Mode',
+                      subtitle: 'Discover restaurants, make reservations, view QR passes',
+                      role: UserRole.customer,
+                      currentRole: user.role,
+                    ),
+                    const Divider(height: 16),
+                    _buildRoleRadio(
+                      context,
+                      ref,
+                      title: 'Restaurant Manager Mode',
+                      subtitle: 'Manage tables, live guest check-in, QR camera scanner',
+                      role: UserRole.manager,
+                      currentRole: user.role,
+                    ),
+                    const Divider(height: 16),
+                    _buildRoleRadio(
+                      context,
+                      ref,
+                      title: 'Administrator Mode',
+                      subtitle: 'Platform analytics, user & restaurant oversight',
+                      role: UserRole.admin,
+                      currentRole: user.role,
+                    ),
+                  ],
+                ),
               ),
-            ),
-
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
+            ],
 
             // Navigation Links
             Container(

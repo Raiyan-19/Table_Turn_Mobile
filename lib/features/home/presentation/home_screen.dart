@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -65,9 +66,10 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
 
-                    // Quick Switch Role for Demo & Evaluation
-                    PopupMenuButton<UserRole>(
-                      tooltip: 'Switch User Role',
+                    // Quick Switch Role for Demo & Evaluation (Protected: Debug/Evaluation Only)
+                    if (kDebugMode)
+                      PopupMenuButton<UserRole>(
+                        tooltip: 'Switch User Role (Debug)',
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

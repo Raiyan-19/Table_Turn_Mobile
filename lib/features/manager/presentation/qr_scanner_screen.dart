@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/models/reservation_model.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../reservation/providers/reservation_provider.dart';
 
 class QrScannerScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
   final _refController = TextEditingController();
   ReservationModel? _matchedBooking;
   bool _hasSearched = false;
+  String? _searchErrorMessage;
 
   @override
   void dispose() {
@@ -26,22 +28,43 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
   }
 
   void _verifyCode(String query) {
-    final resState = ref.read(reservationProvider);
     final cleanQuery = query.trim().toUpperCase();
+    if (cleanQuery.isEmpty) return;
+
+    final resState = ref.read(reservationProvider);
+    final currentManager = ref.read(authProvider).currentUser;
+    final managedRestId = currentManager?.managedRestaurantId;
 
     ReservationModel? match;
+    String? error;
+
     try {
-      match = resState.reservations.firstWhere(
+      final found = resState.reservations.firstWhere(
         (r) =>
             r.bookingRef.toUpperCase() == cleanQuery ||
-            r.qrCodeData.toUpperCase().contains(cleanQuery),
+            r.qrCodeData.toUpperCase() == cleanQuery ||
+            r.qrCodeData.toUpperCase().startsWith('$cleanQuery:'),
       );
+
+      // Check tenant isolation: manager cannot check in a reservation for a different restaurant
+      if (managedRestId != null && found.restaurantId != managedRestId) {
+        error = 'Security Alert: This reservation belongs to "${found.restaurantName}". Cross-restaurant check-in is forbidden.';
+      } else if (found.status == ReservationStatus.checkedIn || found.status == ReservationStatus.completed) {
+        error = 'Notice: This guest has already been checked in.';
+        match = found;
+      } else if (found.status == ReservationStatus.cancelled) {
+        error = 'Notice: This reservation was cancelled.';
+        match = found;
+      } else {
+        match = found;
+      }
     } catch (_) {
-      match = null;
+      error = 'No active reservation matches that code. Please verify the code or scan again.';
     }
 
     setState(() {
       _matchedBooking = match;
+      _searchErrorMessage = error;
       _hasSearched = true;
     });
   }
@@ -167,9 +190,41 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
 
             const SizedBox(height: 20),
 
-            // Matched Result Card
+            // Matched Result Card or Error
             if (_hasSearched) ...[
-              if (_matchedBooking != null)
+              if (_searchErrorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: _matchedBooking == null ? Colors.red.shade50 : Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _matchedBooking == null ? Colors.red.shade300 : Colors.amber.shade400,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _matchedBooking == null ? Icons.error_outline : Icons.info_outline,
+                        color: _matchedBooking == null ? Colors.red : Colors.amber.shade900,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _searchErrorMessage!,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: _matchedBooking == null ? Colors.red.shade800 : Colors.amber.shade900,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (_matchedBooking != null && _searchErrorMessage == null)
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
@@ -230,30 +285,10 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                           setState(() {
                             _matchedBooking = null;
                             _hasSearched = false;
+                            _searchErrorMessage = null;
                             _refController.clear();
                           });
                         },
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.shade300),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'No active reservation matches that code. Please verify the code or scan again.',
-                          style: GoogleFonts.poppins(fontSize: 13, color: Colors.red.shade800),
-                        ),
                       ),
                     ],
                   ),

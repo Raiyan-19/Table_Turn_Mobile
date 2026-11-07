@@ -1,6 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Essential Network Permissions -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!-- Camera Permission for QR Host Pass Scanner -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- Location Permissions for Restaurant Discovery & Distance Filtering -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
     <application
-        android:label="table_turn"
+        android:label="TableTurn"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

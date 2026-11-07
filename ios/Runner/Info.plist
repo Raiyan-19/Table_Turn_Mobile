@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>TableTurn needs camera access to scan customer QR reservation passes at restaurant host stands.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>TableTurn uses your location to discover nearby restaurants across Bangladesh and calculate travel estimates.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>TableTurn uses your location to notify you when your reserved table is ready as you approach the restaurant.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

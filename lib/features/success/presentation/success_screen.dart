@@ -11,58 +11,7 @@ class SuccessScreen extends StatelessWidget {
   const SuccessScreen({super.key});
 
   void _handleContinue(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.backgroundWarm,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'Enjoy Dining!',
-            style: GoogleFonts.merienda(
-              fontSize: 20,
-              fontWeight: FontWeight.w400,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'You have successfully completed the 4-screen authentication flow for Table Turn.',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                context.go('/home');
-              },
-              child: Text(
-                'Explore Restaurants',
-                style: GoogleFonts.poppins(color: AppColors.primaryGreen, fontWeight: FontWeight.w600),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                context.go('/splash');
-              },
-              child: Text(
-                'Restart Flow',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    context.go('/home');
   }
 
   @override

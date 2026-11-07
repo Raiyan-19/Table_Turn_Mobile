@@ -24,14 +24,30 @@ class _ReservationConfirmationScreenState
 
   void _onConfirm() async {
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(milliseconds: 700));
+    await Future.delayed(const Duration(milliseconds: 500));
 
     final resNotifier = ref.read(reservationProvider.notifier);
-    final newBooking = resNotifier.createReservation();
+    final currentUser = ref.read(authProvider).currentUser;
 
-    if (mounted) {
-      setState(() => _isSubmitting = false);
-      context.go('/booking-success/${newBooking.id}');
+    try {
+      final newBooking = resNotifier.createReservation(user: currentUser);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        context.go('/booking-success/${newBooking.id}');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().replaceAll('StateError: ', ''),
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 

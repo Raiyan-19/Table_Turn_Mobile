@@ -75,17 +75,11 @@ void main() {
     expect(find.text('Welcome back'), findsOneWidget);
     expect(find.text('Continue to Home'), findsOneWidget);
 
-    // Tap Continue to Home
+    // Tap Continue to Home (Directly navigates to HomeScreen in production flow)
     await tester.tap(find.text('Continue to Home'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Enjoy Dining!'), findsOneWidget);
-    expect(find.text('Restart Flow'), findsOneWidget);
-
-    await tester.tap(find.text('Restart Flow'));
-    await tester.pumpAndSettle();
-
-    // Returns back to Splash Screen
-    expect(find.text('A better dining experinece awaits'), findsOneWidget);
+    // Arrives at HomeScreen
+    expect(find.text('Find your ideal table across Bangladesh'), findsOneWidget);
   });
 }

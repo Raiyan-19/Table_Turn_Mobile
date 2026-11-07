@@ -4,6 +4,7 @@ import '../../../core/mock/mock_data.dart';
 import '../../../core/models/reservation_model.dart';
 import '../../../core/models/restaurant_model.dart';
 import '../../../core/models/table_model.dart';
+import '../../../core/models/user_model.dart';
 
 class ReservationDraft {
   final RestaurantModel? restaurant;
@@ -120,20 +121,62 @@ class ReservationNotifier extends StateNotifier<ReservationState> {
     state = state.copyWith(draft: state.draft.copyWith(specialRequests: notes));
   }
 
-  ReservationModel createReservation() {
-    final randomNum = 1000 + Random().nextInt(9000);
-    final bookingRef = 'TT-2026-$randomNum';
-    final id = 'res_$bookingRef';
+  static String generateSecureBookingRef() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final rnd = Random.secure();
+    final buffer = StringBuffer('TT-2026-');
+    for (var i = 0; i < 6; i++) {
+      buffer.write(chars[rnd.nextInt(chars.length)]);
+    }
+    return buffer.toString();
+  }
 
+  bool isSlotAvailable({
+    required String restaurantId,
+    required String tableId,
+    required DateTime date,
+    required String timeSlot,
+  }) {
+    return !state.reservations.any((r) =>
+        r.restaurantId == restaurantId &&
+        r.tableId == tableId &&
+        r.timeSlot == timeSlot &&
+        r.status != ReservationStatus.cancelled &&
+        r.reservationDate.year == date.year &&
+        r.reservationDate.month == date.month &&
+        r.reservationDate.day == date.day);
+  }
+
+  ReservationModel createReservation({UserModel? user}) {
     final restaurant = state.draft.restaurant ?? MockData.restaurants.first;
     final table = state.draft.selectedTable ?? MockData.tables.first;
+    final customer = user ?? MockData.defaultCustomer;
+
+    // Check slot availability before confirming to prevent double-booking
+    final slotAvailable = isSlotAvailable(
+      restaurantId: restaurant.id,
+      tableId: table.id,
+      date: state.draft.reservationDate,
+      timeSlot: state.draft.selectedTimeSlot,
+    );
+
+    if (!slotAvailable) {
+      throw StateError('This table is already reserved for the selected date and time slot.');
+    }
+
+    final bookingRef = generateSecureBookingRef();
+    final id = 'res_$bookingRef';
+
+    // Cryptographic-style verifiable payload format: ref:restId:tableId:userId:timestamp
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final qrSignature = '$bookingRef:${restaurant.id}:${table.id}:${customer.id}:$timestamp';
 
     final newReservation = ReservationModel(
       id: id,
       bookingRef: bookingRef,
-      userId: 'user_01',
-      userName: 'Sultan Md. Raiyan',
-      userPhone: '+8801571284636',
+      userId: customer.id,
+      userName: customer.name,
+      userPhone: customer.phone,
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
       restaurantAddress: restaurant.address,
@@ -148,7 +191,7 @@ class ReservationNotifier extends StateNotifier<ReservationState> {
           ? null
           : state.draft.specialRequests,
       status: ReservationStatus.confirmed,
-      qrCodeData: '$bookingRef:${restaurant.id}:${table.id}:user_01',
+      qrCodeData: qrSignature,
       createdAt: DateTime.now(),
     );
 
@@ -182,10 +225,24 @@ class ReservationNotifier extends StateNotifier<ReservationState> {
     state = state.copyWith(reservations: updated);
   }
 
-  ReservationModel? verifyQrCode(String qrData) {
+  /// Tenant-scoped QR verification: Host manager only verifies reservations for their own restaurant.
+  ReservationModel? verifyQrCode(String qrData, {String? managerRestaurantId}) {
     try {
-      final ref = qrData.split(':').first;
-      return state.reservations.firstWhere((r) => r.bookingRef == ref);
+      final cleanQuery = qrData.trim().toUpperCase();
+      final ref = cleanQuery.split(':').first;
+
+      final match = state.reservations.firstWhere(
+        (r) =>
+            r.bookingRef.toUpperCase() == ref ||
+            r.qrCodeData.toUpperCase() == cleanQuery,
+      );
+
+      // Enforce multi-tenant restaurant scoping
+      if (managerRestaurantId != null && match.restaurantId != managerRestaurantId) {
+        return null;
+      }
+
+      return match;
     } catch (_) {
       return null;
     }
