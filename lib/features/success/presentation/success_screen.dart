@@ -33,6 +33,16 @@ class SuccessScreen extends StatelessWidget {
             ),
           ),
           actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.go('/home');
+              },
+              child: Text(
+                'Explore Restaurants',
+                style: GoogleFonts.poppins(color: AppColors.primaryGreen, fontWeight: FontWeight.w600),
+              ),
+            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,

@@ -308,15 +308,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               // Sign Up Footer
               GestureDetector(
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Sign Up screen is outside the 4-screen scope.',
-                        style: GoogleFonts.poppins(),
-                      ),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                  context.push('/sign-up');
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
