@@ -46,7 +46,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       backgroundColor: AppColors.backgroundWarm,
       appBar: const AppHeader(
         title: 'Platform Users',
-        subtitle: 'Manage diners & restaurant managers',
+        subtitle: 'Manage customers & restaurant managers',
         showBackButton: false,
       ),
       body: ListView.separated(
@@ -142,3 +142,4 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 }
+

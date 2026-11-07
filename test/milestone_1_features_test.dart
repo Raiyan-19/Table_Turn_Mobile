@@ -204,7 +204,7 @@ void main() {
 
       expect(find.text('Platform Administration'), findsOneWidget);
       expect(find.text('Partner Venues'), findsOneWidget);
-      expect(find.text('Active Diners'), findsOneWidget);
+      expect(find.text('Active Customers'), findsOneWidget);
       expect(find.text('Reservations by Administrative Division'), findsOneWidget);
     });
   });

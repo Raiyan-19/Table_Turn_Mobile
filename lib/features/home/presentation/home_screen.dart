@@ -82,7 +82,7 @@ class HomeScreen extends ConsumerWidget {
                       itemBuilder: (context) => [
                         const PopupMenuItem(
                           value: UserRole.customer,
-                          child: Text('Diner / Customer Mode'),
+                          child: Text('Customer Mode'),
                         ),
                         const PopupMenuItem(
                           value: UserRole.manager,

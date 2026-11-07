@@ -211,3 +211,4 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     );
   }
 }
+

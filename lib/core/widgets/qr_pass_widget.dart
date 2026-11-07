@@ -227,3 +227,4 @@ class QrPassWidget extends StatelessWidget {
     );
   }
 }
+

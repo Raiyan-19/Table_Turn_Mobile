@@ -60,3 +60,4 @@ class CategoryChip extends StatelessWidget {
     );
   }
 }
+

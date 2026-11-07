@@ -44,3 +44,4 @@ class AppDimensions {
   );
   static const EdgeInsets edgeInsetsCard = EdgeInsets.all(lg);
 }
+

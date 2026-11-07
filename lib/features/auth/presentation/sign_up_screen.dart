@@ -134,7 +134,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           ),
                           alignment: Alignment.center,
                           child: Text(
-                            'Diner / Guest',
+                            'Customer',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: _selectedRole == UserRole.customer
@@ -260,3 +260,4 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     );
   }
 }
+

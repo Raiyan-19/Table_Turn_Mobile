@@ -23,7 +23,7 @@ class AppStrings {
   static const String phoneNumber = 'Phone Number';
   static const String confirmPassword = 'Confirm Password';
   static const String selectRole = 'Account Type';
-  static const String roleCustomer = 'Diner / Customer';
+  static const String roleCustomer = 'Customer';
   static const String roleManager = 'Restaurant Manager';
   static const String resetPassword = 'Reset Password';
   static const String sendResetLink = 'Send Reset Link';
@@ -90,3 +90,4 @@ class AppStrings {
   static const String scanQr = 'Scan Guest QR';
   static const String verifyPass = 'Verify Check-In';
 }
+

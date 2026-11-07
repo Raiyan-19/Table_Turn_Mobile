@@ -52,3 +52,4 @@ class RatingStars extends StatelessWidget {
     );
   }
 }
+

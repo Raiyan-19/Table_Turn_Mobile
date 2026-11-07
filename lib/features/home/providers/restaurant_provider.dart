@@ -161,3 +161,4 @@ final restaurantProvider =
     StateNotifierProvider<RestaurantNotifier, RestaurantState>((ref) {
   return RestaurantNotifier();
 });
+

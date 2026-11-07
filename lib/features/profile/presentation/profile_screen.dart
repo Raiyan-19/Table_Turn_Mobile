@@ -133,7 +133,7 @@ class ProfileScreen extends ConsumerWidget {
                   _buildRoleRadio(
                     context,
                     ref,
-                    title: 'Diner / Customer Mode',
+                    title: 'Customer Mode',
                     subtitle: 'Discover restaurants, make reservations, view QR passes',
                     role: UserRole.customer,
                     currentRole: user.role,
@@ -322,3 +322,4 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 }
+

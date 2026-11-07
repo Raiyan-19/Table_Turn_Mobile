@@ -43,7 +43,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildKpiCard(
-                    'Active Diners',
+                    'Active Customers',
                     '1,480+',
                     '+14% this month',
                     Icons.people_outline,
@@ -243,3 +243,4 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 }
+
