@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/custom_back_button.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
 import '../widgets/dial_pad.dart';
 import '../widgets/otp_box.dart';
@@ -19,11 +21,40 @@ class OtpScreen extends ConsumerStatefulWidget {
 
 class _OtpScreenState extends ConsumerState<OtpScreen> {
   void _handleVerify() async {
-    final otpNotifier = ref.read(otpProvider.notifier);
-    final isValid = await otpNotifier.verify();
+    final otpState = ref.read(otpProvider);
+    final authNotifier = ref.read(authProvider.notifier);
 
-    if (isValid && mounted) {
-      context.push('/success');
+    if (otpState.otp.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please enter the full 6-digit verification code.',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    final isValid = await authNotifier.verifyOtp(otpState.otp);
+
+    if (mounted) {
+      if (isValid) {
+        context.push('/success');
+      } else {
+        final errorMsg = ref.read(authProvider).generalError ??
+            'Invalid verification code. Please try again.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorMsg,
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
@@ -182,6 +213,18 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         textAlign: TextAlign.center,
                       ),
                     ),
+                    if (kDebugMode)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          '(Dev Code: 123456)',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryGreen,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 24),
 
                     // 6-digit OTP boxes

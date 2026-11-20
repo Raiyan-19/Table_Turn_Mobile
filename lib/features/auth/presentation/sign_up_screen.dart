@@ -42,16 +42,32 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   void _handleSignUp() async {
     final notifier = ref.read(authProvider.notifier);
+    notifier.setName(_nameController.text.trim());
+    notifier.setEmailOrPhone(_emailController.text.trim());
+    notifier.setPassword(_passwordController.text);
+
     if (!notifier.validateSignUp()) {
       return;
     }
 
-    notifier.setLoading(true);
-    await Future.delayed(const Duration(milliseconds: 600));
-    notifier.loginAsRole(_selectedRole);
+    final success = await notifier.register();
 
     if (mounted) {
-      context.push('/otp');
+      if (success) {
+        context.push('/otp');
+      } else {
+        final errorMsg = ref.read(authProvider).generalError ??
+            'Registration failed. Please check your details.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorMsg,
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 

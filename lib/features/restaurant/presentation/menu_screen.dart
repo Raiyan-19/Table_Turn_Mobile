@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/mock/mock_data.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/empty_state_widget.dart';
+import '../../home/providers/restaurant_provider.dart';
+import '../providers/restaurant_content_provider.dart';
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends ConsumerWidget {
   final String restaurantId;
 
   const MenuScreen({
@@ -14,15 +17,19 @@ class MenuScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final restaurant = MockData.restaurants.firstWhere(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final restaurantState = ref.watch(restaurantProvider);
+    final restaurant = restaurantState.allRestaurants.firstWhere(
       (r) => r.id == restaurantId,
-      orElse: () => MockData.restaurants.first,
+      orElse: () => MockData.restaurants.firstWhere(
+        (r) => r.id == restaurantId,
+        orElse: () => MockData.restaurants.first,
+      ),
     );
 
-    final items = MockData.menuItems
-        .where((m) => m.restaurantId == restaurant.id)
-        .toList();
+    final menuAsync = ref.watch(restaurantMenuProvider(restaurantId));
+    final items = menuAsync.value ??
+        MockData.menuItems.where((m) => m.restaurantId == restaurant.id).toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,

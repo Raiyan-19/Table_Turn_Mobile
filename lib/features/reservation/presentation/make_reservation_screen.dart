@@ -8,6 +8,7 @@ import '../../../core/mock/mock_data.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../providers/reservation_provider.dart';
+import '../../restaurant/providers/restaurant_content_provider.dart';
 
 class MakeReservationScreen extends ConsumerStatefulWidget {
   final String restaurantId;
@@ -53,9 +54,8 @@ class _MakeReservationScreenState extends ConsumerState<MakeReservationScreen> {
           orElse: () => MockData.restaurants.first,
         );
 
-    final availableTables = MockData.tables
-        .where((t) => t.restaurantId == restaurant.id && t.isAvailable)
-        .toList();
+    final tablesList = ref.watch(restaurantTablesProvider(restaurant.id));
+    final availableTables = tablesList.where((t) => t.isAvailable).toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,

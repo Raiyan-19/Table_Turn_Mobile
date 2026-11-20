@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -66,63 +65,71 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
 
-                    // Quick Switch Role for Demo & Evaluation (Protected: Debug/Evaluation Only)
-                    if (kDebugMode)
-                      PopupMenuButton<UserRole>(
-                        tooltip: 'Switch User Role (Debug)',
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      onSelected: (role) {
-                        ref.read(authProvider.notifier).loginAsRole(role);
-                        if (role == UserRole.manager) {
-                          context.go('/manager-dashboard');
-                        } else if (role == UserRole.admin) {
-                          context.go('/admin-dashboard');
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: UserRole.customer,
-                          child: Text('Customer Mode'),
-                        ),
-                        const PopupMenuItem(
-                          value: UserRole.manager,
-                          child: Text('Restaurant Manager Mode'),
-                        ),
-                        const PopupMenuItem(
-                          value: UserRole.admin,
-                          child: Text('System Admin Mode'),
-                        ),
-                      ],
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.lightGreen,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.primaryGreen, width: 1),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.swap_horiz_rounded,
-                              size: 16,
-                              color: AppColors.primaryGreen,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              authState.currentRole.displayName,
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                    // Staff Portal Quick Access (Visible strictly when authenticated as Manager/Admin)
+                    if (authState.currentRole == UserRole.manager)
+                      InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => context.go('/manager-dashboard'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.lightGreen,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.primaryGreen, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.store_mall_directory_rounded,
+                                size: 16,
                                 color: AppColors.primaryGreen,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                'Host Desk',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryGreen,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (authState.currentRole == UserRole.admin)
+                      InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => context.go('/admin-dashboard'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.lightGreen,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.darkGreen, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.admin_panel_settings_rounded,
+                                size: 16,
+                                color: AppColors.darkGreen,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Admin Panel',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.darkGreen,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),

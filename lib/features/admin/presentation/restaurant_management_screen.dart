@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/mock/mock_data.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/rating_stars.dart';
+import '../../home/providers/restaurant_provider.dart';
 
-class RestaurantManagementScreen extends StatelessWidget {
+class RestaurantManagementScreen extends ConsumerWidget {
   const RestaurantManagementScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final restaurants = MockData.restaurants;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stateRestaurants = ref.watch(restaurantProvider).allRestaurants;
+    final restaurants = stateRestaurants.isNotEmpty ? stateRestaurants : MockData.restaurants;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,

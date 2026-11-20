@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/models/user_model.dart';
 import '../../../core/widgets/custom_back_button.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../providers/auth_provider.dart';
@@ -38,29 +39,66 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   void _handleSignIn() async {
     final notifier = ref.read(authProvider.notifier);
+    notifier.setEmailOrPhone(_emailController.text.trim());
+    notifier.setPassword(_passwordController.text);
+
     if (!notifier.validateAndSubmit()) {
       return;
     }
 
     notifier.setLoading(true);
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 300));
+    final success = await notifier.login(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
     notifier.setLoading(false);
 
     if (mounted) {
-      context.push('/otp');
+      if (success) {
+        final authState = ref.read(authProvider);
+        if (authState.currentRole == UserRole.manager) {
+          context.go('/manager-dashboard');
+        } else if (authState.currentRole == UserRole.admin) {
+          context.go('/admin-dashboard');
+        } else if (authState.currentUser != null && !authState.currentUser!.isEmailVerified) {
+          context.push('/otp');
+        } else {
+          context.go('/home');
+        }
+      } else {
+        final errorMsg = ref.read(authProvider).generalError ??
+            'Sign in failed. Please verify your credentials.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorMsg,
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
   void _showForgotPasswordSheet() {
+    final emailController = TextEditingController(text: _emailController.text.trim());
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.backgroundWarm,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.only(
+            left: 24.0,
+            right: 24.0,
+            top: 24.0,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,23 +113,34 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'A verification link will be sent to your registered email or phone number.',
+                'Enter your registered email address to receive password reset instructions.',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: emailController,
+                hintText: 'Registered email',
+                prefixIconAsset: AppAssets.email,
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 20),
               PrimaryButton(
                 text: 'Send Reset Link',
                 height: 52,
-                onPressed: () {
+                onPressed: () async {
+                  final email = emailController.text.trim();
+                  if (email.isEmpty) return;
+                  final messenger = ScaffoldMessenger.of(context);
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  await ref.read(authProvider.notifier).forgotPassword(email);
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text(
-                        'Password reset instructions sent!',
+                        'If that email is registered, instructions have been sent.',
                         style: GoogleFonts.poppins(),
                       ),
                       backgroundColor: AppColors.primaryGreen,
@@ -107,15 +156,42 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     );
   }
 
-  void _onSocialTap(String provider) {
+  void _onSocialTap(String provider) async {
+    if (provider == 'Google') {
+      final success = await ref.read(authProvider.notifier).loginWithGoogle();
+      if (mounted) {
+        if (success) {
+          final authState = ref.read(authProvider);
+          if (authState.currentRole == UserRole.manager) {
+            context.go('/manager-dashboard');
+          } else if (authState.currentRole == UserRole.admin) {
+            context.go('/admin-dashboard');
+          } else {
+            context.go('/home');
+          }
+        } else {
+          final errorMsg = ref.read(authProvider).generalError;
+          if (errorMsg != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMsg, style: GoogleFonts.poppins()),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        }
+      }
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '$provider sign-in initiated...',
+          '$provider sign-in will be available in the next release.',
           style: GoogleFonts.poppins(),
         ),
-        backgroundColor: AppColors.primaryGreen,
-        duration: const Duration(seconds: 1),
+        backgroundColor: AppColors.darkGreen,
+        duration: const Duration(seconds: 2),
       ),
     );
   }

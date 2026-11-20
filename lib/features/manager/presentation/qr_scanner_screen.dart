@@ -27,11 +27,12 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
     super.dispose();
   }
 
-  void _verifyCode(String query) {
+  void _verifyCode(String query) async {
     final cleanQuery = query.trim().toUpperCase();
     if (cleanQuery.isEmpty) return;
 
     final resState = ref.read(reservationProvider);
+    final resNotifier = ref.read(reservationProvider.notifier);
     final currentManager = ref.read(authProvider).currentUser;
     final managedRestId = currentManager?.managedRestaurantId;
 
@@ -45,28 +46,41 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
             r.qrCodeData.toUpperCase() == cleanQuery ||
             r.qrCodeData.toUpperCase().startsWith('$cleanQuery:'),
       );
-
-      // Check tenant isolation: manager cannot check in a reservation for a different restaurant
-      if (managedRestId != null && found.restaurantId != managedRestId) {
-        error = 'Security Alert: This reservation belongs to "${found.restaurantName}". Cross-restaurant check-in is forbidden.';
-      } else if (found.status == ReservationStatus.checkedIn || found.status == ReservationStatus.completed) {
-        error = 'Notice: This guest has already been checked in.';
-        match = found;
-      } else if (found.status == ReservationStatus.cancelled) {
-        error = 'Notice: This reservation was cancelled.';
-        match = found;
-      } else {
-        match = found;
-      }
+      match = found;
     } catch (_) {
-      error = 'No active reservation matches that code. Please verify the code or scan again.';
+      // Try online verification with backend
+      final onlineMatch = await resNotifier.verifyQrCodeOnline(
+        cleanQuery,
+        managerRestaurantId: managedRestId,
+      );
+      if (onlineMatch != null) {
+        match = onlineMatch;
+      }
     }
 
-    setState(() {
-      _matchedBooking = match;
-      _searchErrorMessage = error;
-      _hasSearched = true;
-    });
+    if (match != null) {
+      // Check tenant isolation: manager cannot check in a reservation for a different restaurant
+      if (managedRestId != null && match.restaurantId != managedRestId) {
+        error =
+            'Security Alert: This reservation belongs to "${match.restaurantName}". Cross-restaurant check-in is forbidden.';
+      } else if (match.status == ReservationStatus.checkedIn ||
+          match.status == ReservationStatus.completed) {
+        error = 'Notice: This guest has already been checked in.';
+      } else if (match.status == ReservationStatus.cancelled) {
+        error = 'Notice: This reservation was cancelled.';
+      }
+    } else {
+      error =
+          'No active reservation matches that code. Please verify the code or scan again.';
+    }
+
+    if (mounted) {
+      setState(() {
+        _matchedBooking = match;
+        _searchErrorMessage = error;
+        _hasSearched = true;
+      });
+    }
   }
 
   @override

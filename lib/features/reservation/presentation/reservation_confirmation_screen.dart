@@ -30,7 +30,7 @@ class _ReservationConfirmationScreenState
     final currentUser = ref.read(authProvider).currentUser;
 
     try {
-      final newBooking = resNotifier.createReservation(user: currentUser);
+      final newBooking = await resNotifier.bookReservationOnline(user: currentUser);
       if (mounted) {
         setState(() => _isSubmitting = false);
         context.go('/booking-success/${newBooking.id}');

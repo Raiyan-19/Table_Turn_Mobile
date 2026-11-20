@@ -9,6 +9,7 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/rating_stars.dart';
 import '../../home/providers/restaurant_provider.dart';
 import '../../reservation/providers/reservation_provider.dart';
+import '../providers/restaurant_content_provider.dart';
 
 class RestaurantDetailScreen extends ConsumerWidget {
   final String restaurantId;
@@ -29,12 +30,13 @@ class RestaurantDetailScreen extends ConsumerWidget {
     );
 
     final isFav = restaurantState.favoriteIds.contains(restaurant.id);
-    final reviews = MockData.reviews
-        .where((r) => r.restaurantId == restaurant.id)
-        .toList();
-    final menuItems = MockData.menuItems
-        .where((m) => m.restaurantId == restaurant.id)
-        .toList();
+    final reviewsAsync = ref.watch(restaurantReviewsProvider(restaurant.id));
+    final reviews = reviewsAsync.value ??
+        MockData.reviews.where((r) => r.restaurantId == restaurant.id).toList();
+
+    final menuAsync = ref.watch(restaurantMenuProvider(restaurant.id));
+    final menuItems = menuAsync.value ??
+        MockData.menuItems.where((m) => m.restaurantId == restaurant.id).toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,

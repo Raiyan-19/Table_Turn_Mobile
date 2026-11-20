@@ -1,11 +1,67 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/models/user_model.dart';
+import '../../auth/providers/auth_provider.dart';
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted) {
+        _checkSessionAndNavigate();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _checkSessionAndNavigate() {
+    final authState = ref.read(authProvider);
+    if (authState.isAuthenticated) {
+      if (authState.currentRole == UserRole.manager) {
+        context.go('/manager-dashboard');
+      } else if (authState.currentRole == UserRole.admin) {
+        context.go('/admin-dashboard');
+      } else {
+        context.go('/home');
+      }
+    }
+  }
+
+  void _onProceed() {
+    _timer?.cancel();
+    final authState = ref.read(authProvider);
+    if (authState.isAuthenticated) {
+      if (authState.currentRole == UserRole.manager) {
+        context.go('/manager-dashboard');
+      } else if (authState.currentRole == UserRole.admin) {
+        context.go('/admin-dashboard');
+      } else {
+        context.go('/home');
+      }
+    } else {
+      context.push('/sign-in');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,10 +71,10 @@ class SplashScreen extends StatelessWidget {
     return Scaffold(
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => context.push('/sign-in'),
+        onTap: _onProceed,
         onHorizontalDragEnd: (details) {
           if (details.primaryVelocity != null && details.primaryVelocity! < 0) {
-            context.push('/sign-in');
+            _onProceed();
           }
         },
         child: Stack(
@@ -123,7 +179,7 @@ class SplashScreen extends StatelessWidget {
                     // Bottom subtitle / action
                     InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      onTap: () => context.push('/sign-in'),
+                      onTap: _onProceed,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,

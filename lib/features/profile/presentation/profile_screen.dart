@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -106,62 +105,69 @@ class ProfileScreen extends ConsumerWidget {
 
             const SizedBox(height: 20),
 
-            // Demo Role Switcher Section (Protected: Active in Debug & Evaluation Builds Only)
-            if (kDebugMode) ...[
+            // Staff & Management Portal (Accessible strictly when authenticated with manager/admin role)
+            if (user.role == UserRole.manager) ...[
               Container(
-                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.swap_horiz, color: AppColors.primaryGreen),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Switch System Role (Debug Only)',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildRoleRadio(
-                      context,
-                      ref,
-                      title: 'Customer Mode',
-                      subtitle: 'Discover restaurants, make reservations, view QR passes',
-                      role: UserRole.customer,
-                      currentRole: user.role,
-                    ),
-                    const Divider(height: 16),
-                    _buildRoleRadio(
-                      context,
-                      ref,
-                      title: 'Restaurant Manager Mode',
-                      subtitle: 'Manage tables, live guest check-in, QR camera scanner',
-                      role: UserRole.manager,
-                      currentRole: user.role,
-                    ),
-                    const Divider(height: 16),
-                    _buildRoleRadio(
-                      context,
-                      ref,
-                      title: 'Administrator Mode',
-                      subtitle: 'Platform analytics, user & restaurant oversight',
-                      role: UserRole.admin,
-                      currentRole: user.role,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
+                child: ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: AppColors.lightGreen,
+                    child: Icon(Icons.store_mall_directory_rounded, color: AppColors.primaryGreen),
+                  ),
+                  title: Text(
+                    'Host & Manager Dashboard',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  subtitle: Text(
+                    'Manage assigned venue, tables & live QR check-ins',
+                    style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textSecondary),
+                  onTap: () => context.go('/manager-dashboard'),
+                ),
               ),
-              const SizedBox(height: 20),
+            ] else if (user.role == UserRole.admin) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: AppColors.lightGreen,
+                    child: Icon(Icons.admin_panel_settings_rounded, color: AppColors.darkGreen),
+                  ),
+                  title: Text(
+                    'System Administration Portal',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  subtitle: Text(
+                    'Platform metrics, venues & user management',
+                    style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textSecondary),
+                  onTap: () => context.go('/admin-dashboard'),
+                ),
+              ),
             ],
 
             // Navigation Links
@@ -236,73 +242,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRoleRadio(
-    BuildContext context,
-    WidgetRef ref, {
-    required String title,
-    required String subtitle,
-    required UserRole role,
-    required UserRole currentRole,
-  }) {
-    final isSelected = currentRole == role;
-    return InkWell(
-      onTap: () {
-        ref.read(authProvider.notifier).loginAsRole(role);
-        if (role == UserRole.manager) {
-          context.go('/manager-dashboard');
-        } else if (role == UserRole.admin) {
-          context.go('/admin-dashboard');
-        } else {
-          context.go('/home');
-        }
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Radio<UserRole>(
-              value: role,
-              groupValue: currentRole,
-              activeColor: AppColors.primaryGreen,
-              onChanged: (_) {
-                ref.read(authProvider.notifier).loginAsRole(role);
-                if (role == UserRole.manager) {
-                  context.go('/manager-dashboard');
-                } else if (role == UserRole.admin) {
-                  context.go('/admin-dashboard');
-                } else {
-                  context.go('/home');
-                }
-              },
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? AppColors.primaryGreen : AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildMenuItem({
     required IconData icon,

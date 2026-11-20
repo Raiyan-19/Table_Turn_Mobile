@@ -49,3 +49,13 @@ app.*.map.json
 
 # Figma Inspection Cache
 figma_inspection/
+
+# Node.js / Backend
+backend/node_modules/
+backend/.env
+.env
+atlas-credentials.env
+*.env
+
+
+figma_inspection/

@@ -1,64 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/mock/mock_data.dart';
 import '../../../core/models/table_model.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../home/providers/restaurant_provider.dart';
+import '../../restaurant/providers/restaurant_content_provider.dart';
 
-class TableManagementScreen extends StatefulWidget {
+class TableManagementScreen extends ConsumerStatefulWidget {
   const TableManagementScreen({super.key});
 
   @override
-  State<TableManagementScreen> createState() => _TableManagementScreenState();
+  ConsumerState<TableManagementScreen> createState() => _TableManagementScreenState();
 }
 
-class _TableManagementScreenState extends State<TableManagementScreen> {
-  late List<TableModel> _tables;
+class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
+  void _cycleStatus(String restaurantId, TableModel table) {
+    TableStatus next;
+    switch (table.status) {
+      case TableStatus.available:
+        next = TableStatus.reserved;
+        break;
+      case TableStatus.reserved:
+        next = TableStatus.occupied;
+        break;
+      case TableStatus.occupied:
+        next = TableStatus.available;
+        break;
+    }
 
-  @override
-  void initState() {
-    super.initState();
-    _tables = List.from(MockData.tables);
-  }
-
-  void _cycleStatus(String tableId) {
-    setState(() {
-      _tables = _tables.map((t) {
-        if (t.id == tableId) {
-          TableStatus next;
-          switch (t.status) {
-            case TableStatus.available:
-              next = TableStatus.reserved;
-              break;
-            case TableStatus.reserved:
-              next = TableStatus.occupied;
-              break;
-            case TableStatus.occupied:
-              next = TableStatus.available;
-              break;
-          }
-          return TableModel(
-            id: t.id,
-            restaurantId: t.restaurantId,
-            tableNumber: t.tableNumber,
-            section: t.section,
-            capacity: t.capacity,
-            status: next,
-            minimumSpend: t.minimumSpend,
-            features: t.features,
-          );
-        }
-        return t;
-      }).toList();
-    });
+    ref.read(restaurantTablesProvider(restaurantId).notifier).toggleTableStatus(table.id, next);
   }
 
   @override
   Widget build(BuildContext context) {
-    final availableCount = _tables.where((t) => t.status == TableStatus.available).length;
-    final reservedCount = _tables.where((t) => t.status == TableStatus.reserved).length;
-    final occupiedCount = _tables.where((t) => t.status == TableStatus.occupied).length;
+    final currentUser = ref.watch(authProvider).currentUser;
+    final allRestaurants = ref.watch(restaurantProvider).allRestaurants;
+
+    // Resolve manager's assigned restaurant
+    final assignedId = currentUser?.managedRestaurantId ??
+        (allRestaurants.isNotEmpty ? allRestaurants.first.id : 'rest_01');
+
+    final tables = ref.watch(restaurantTablesProvider(assignedId));
+
+    final availableCount = tables.where((t) => t.status == TableStatus.available).length;
+    final reservedCount = tables.where((t) => t.status == TableStatus.reserved).length;
+    final occupiedCount = tables.where((t) => t.status == TableStatus.occupied).length;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,
@@ -93,9 +82,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                 mainAxisSpacing: 12,
                 childAspectRatio: 1.1,
               ),
-              itemCount: _tables.length,
+              itemCount: tables.length,
               itemBuilder: (context, index) {
-                final table = _tables[index];
+                final table = tables[index];
 
                 return Container(
                   decoration: BoxDecoration(
@@ -118,7 +107,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
-                      onTap: () => _cycleStatus(table.id),
+                      onTap: () => _cycleStatus(assignedId, table),
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
                         child: Column(

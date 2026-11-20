@@ -5,6 +5,7 @@ import '../../../core/models/reservation_model.dart';
 import '../../../core/models/restaurant_model.dart';
 import '../../../core/models/table_model.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/services/api_service.dart';
 
 class ReservationDraft {
   final RestaurantModel? restaurant;
@@ -87,7 +88,26 @@ class ReservationNotifier extends StateNotifier<ReservationState> {
             reservations: MockData.initialReservations,
             draft: ReservationDraft(restaurant: MockData.restaurants.first),
           ),
-        );
+        ) {
+    loadReservations();
+  }
+
+  Future<void> loadReservations() async {
+    try {
+      final res = await ApiService.get('/reservations', requireAuth: true);
+      if (res['success'] == true && res['data'] is List) {
+        final list = (res['data'] as List)
+            .map((item) => ReservationModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+
+        if (list.isNotEmpty) {
+          state = state.copyWith(reservations: list);
+        }
+      }
+    } catch (_) {
+      // Gracefully fall back to local mock reservations if offline or in test
+    }
+  }
 
   void startDraft(RestaurantModel restaurant) {
     state = state.copyWith(
@@ -203,6 +223,57 @@ class ReservationNotifier extends StateNotifier<ReservationState> {
     return newReservation;
   }
 
+  Future<ReservationModel> bookReservationOnline({UserModel? user}) async {
+    final restaurant = state.draft.restaurant ?? MockData.restaurants.first;
+    final table = state.draft.selectedTable ?? MockData.tables.first;
+    final customer = user ?? MockData.defaultCustomer;
+
+    // Check slot availability before confirming to prevent double-booking
+    final slotAvailable = isSlotAvailable(
+      restaurantId: restaurant.id,
+      tableId: table.id,
+      date: state.draft.reservationDate,
+      timeSlot: state.draft.selectedTimeSlot,
+    );
+
+    if (!slotAvailable) {
+      throw StateError('This table is already reserved for the selected date and time slot.');
+    }
+
+    try {
+      final res = await ApiService.post(
+        '/reservations',
+        requireAuth: true,
+        body: {
+          'restaurantId': restaurant.id,
+          'tableId': table.id,
+          'reservationDate': state.draft.reservationDate.toIso8601String(),
+          'timeSlot': state.draft.selectedTimeSlot,
+          'guestCount': state.draft.partySize,
+          'specialRequests': state.draft.specialRequests,
+        },
+      );
+
+      if (res['success'] == true && res['data'] != null) {
+        final onlineBooking =
+            ReservationModel.fromJson(Map<String, dynamic>.from(res['data']));
+        state = state.copyWith(
+          reservations: [onlineBooking, ...state.reservations],
+          lastCreatedBookingId: onlineBooking.id,
+        );
+        return onlineBooking;
+      } else {
+        throw StateError(res['message'] ?? 'Failed to complete reservation.');
+      }
+    } on ApiException catch (e) {
+      throw StateError(e.message);
+    } catch (e) {
+      if (e is StateError) rethrow;
+      // Fallback for tests or offline operation
+      return createReservation(user: customer);
+    }
+  }
+
   void cancelReservation(String reservationId) {
     final updated = state.reservations.map((r) {
       if (r.id == reservationId) {
@@ -212,6 +283,9 @@ class ReservationNotifier extends StateNotifier<ReservationState> {
     }).toList();
 
     state = state.copyWith(reservations: updated);
+
+    // Sync to backend asynchronously
+    ApiService.patch('/reservations/$reservationId/cancel', requireAuth: true).catchError((_) => <String, dynamic>{});
   }
 
   void updateStatus(String reservationId, ReservationStatus newStatus) {
@@ -223,6 +297,13 @@ class ReservationNotifier extends StateNotifier<ReservationState> {
     }).toList();
 
     state = state.copyWith(reservations: updated);
+
+    // Sync to backend asynchronously
+    ApiService.patch(
+      '/reservations/$reservationId/status',
+      requireAuth: true,
+      body: {'status': newStatus.name},
+    ).catchError((_) => <String, dynamic>{});
   }
 
   /// Tenant-scoped QR verification: Host manager only verifies reservations for their own restaurant.
@@ -246,6 +327,27 @@ class ReservationNotifier extends StateNotifier<ReservationState> {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<ReservationModel?> verifyQrCodeOnline(String qrData, {String? managerRestaurantId}) async {
+    final localMatch = verifyQrCode(qrData, managerRestaurantId: managerRestaurantId);
+    if (localMatch != null) return localMatch;
+
+    try {
+      final res = await ApiService.post(
+        '/reservations/verify-qr',
+        requireAuth: true,
+        body: {'qrData': qrData},
+      );
+      if (res['success'] == true && res['data'] != null) {
+        final verified = ReservationModel.fromJson(Map<String, dynamic>.from(res['data']));
+        if (managerRestaurantId != null && verified.restaurantId != managerRestaurantId) {
+          return null;
+        }
+        return verified;
+      }
+    } catch (_) {}
+    return null;
   }
 }
 

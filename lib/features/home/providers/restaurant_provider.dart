@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/mock/mock_data.dart';
 import '../../../core/models/restaurant_model.dart';
+import '../../../core/services/api_service.dart';
 
 class RestaurantState {
   final List<RestaurantModel> allRestaurants;
@@ -10,6 +11,8 @@ class RestaurantState {
   final String searchQuery;
   final Set<String> favoriteIds;
   final String? selectedRestaurantId;
+  final bool isLoading;
+  final String? errorMessage;
 
   const RestaurantState({
     this.allRestaurants = const [],
@@ -19,6 +22,8 @@ class RestaurantState {
     this.searchQuery = '',
     this.favoriteIds = const {},
     this.selectedRestaurantId,
+    this.isLoading = false,
+    this.errorMessage,
   });
 
   List<RestaurantModel> get filteredRestaurants {
@@ -83,6 +88,8 @@ class RestaurantState {
     String? searchQuery,
     Set<String>? favoriteIds,
     String? selectedRestaurantId,
+    bool? isLoading,
+    String? errorMessage,
   }) {
     return RestaurantState(
       allRestaurants: allRestaurants ?? this.allRestaurants,
@@ -92,6 +99,8 @@ class RestaurantState {
       searchQuery: searchQuery ?? this.searchQuery,
       favoriteIds: favoriteIds ?? this.favoriteIds,
       selectedRestaurantId: selectedRestaurantId ?? this.selectedRestaurantId,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
@@ -103,7 +112,40 @@ class RestaurantNotifier extends StateNotifier<RestaurantState> {
             allRestaurants: MockData.restaurants,
             favoriteIds: {'rest_01', 'rest_03'},
           ),
-        );
+        ) {
+    loadRestaurants();
+  }
+
+  Future<void> loadRestaurants() async {
+    try {
+      final res = await ApiService.get('/restaurants');
+      if (res['success'] == true && res['data'] is List) {
+        final list = (res['data'] as List)
+            .map((item) => RestaurantModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+
+        if (list.isNotEmpty) {
+          state = state.copyWith(allRestaurants: list, errorMessage: null);
+        }
+      }
+    } catch (_) {
+      // Gracefully fall back to pre-populated mock data when offline or in test
+    }
+
+    // Try fetching user favorites if logged in
+    try {
+      final favRes = await ApiService.get('/users/favorites', requireAuth: true);
+      if (favRes['success'] == true && favRes['data'] is List) {
+        final favList = (favRes['data'] as List)
+            .map((item) => (item['id'] ?? item['_id'] ?? '').toString())
+            .where((id) => id.isNotEmpty)
+            .toSet();
+        if (favList.isNotEmpty) {
+          state = state.copyWith(favoriteIds: favList);
+        }
+      }
+    } catch (_) {}
+  }
 
   void setDivision(BangladeshDivision? division) {
     if (state.selectedDivision == division) {
@@ -137,14 +179,22 @@ class RestaurantNotifier extends StateNotifier<RestaurantState> {
     state = state.copyWith(selectedRestaurantId: id);
   }
 
-  void toggleFavorite(String restaurantId) {
+  Future<void> toggleFavorite(String restaurantId) async {
     final updated = Set<String>.from(state.favoriteIds);
-    if (updated.contains(restaurantId)) {
+    final isFav = updated.contains(restaurantId);
+    if (isFav) {
       updated.remove(restaurantId);
     } else {
       updated.add(restaurantId);
     }
     state = state.copyWith(favoriteIds: updated);
+
+    // Persist to backend
+    try {
+      await ApiService.post('/users/favorites/$restaurantId', requireAuth: true);
+    } catch (_) {
+      // Silently keep local state if offline or unauthenticated
+    }
   }
 
   void resetFilters() {

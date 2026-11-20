@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/mock/mock_data.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/widgets/app_header.dart';
 
 class UserManagementScreen extends StatefulWidget {
@@ -13,7 +14,8 @@ class UserManagementScreen extends StatefulWidget {
 }
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
-  final List<UserModel> _users = [
+  bool _isLoading = false;
+  List<UserModel> _users = [
     MockData.defaultCustomer,
     MockData.defaultManager,
     MockData.defaultAdmin,
@@ -41,13 +43,56 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    setState(() => _isLoading = true);
+    try {
+      final res = await ApiService.get('/users', requireAuth: true);
+      if (res['success'] == true && res['data'] is List) {
+        final list = (res['data'] as List)
+            .map((item) => UserModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+        if (list.isNotEmpty && mounted) {
+          setState(() {
+            _users = list;
+          });
+        }
+      }
+    } catch (_) {
+      // Fallback kept
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,
-      appBar: const AppHeader(
+      appBar: AppHeader(
         title: 'Platform Users',
         subtitle: 'Manage customers & restaurant managers',
         showBackButton: false,
+        actions: [
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primaryGreen,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       body: ListView.separated(
         padding: const EdgeInsets.all(20),

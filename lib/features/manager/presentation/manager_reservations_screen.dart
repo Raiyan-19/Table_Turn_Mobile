@@ -7,6 +7,7 @@ import '../../../core/models/reservation_model.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/empty_state_widget.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../reservation/providers/reservation_provider.dart';
 
 class ManagerReservationsScreen extends ConsumerStatefulWidget {
@@ -25,8 +26,16 @@ class _ManagerReservationsScreenState
   Widget build(BuildContext context) {
     final resState = ref.watch(reservationProvider);
     final resNotifier = ref.read(reservationProvider.notifier);
+    final authState = ref.watch(authProvider);
+    final managedId = authState.currentUser?.managedRestaurantId;
 
-    final all = resState.reservations;
+    // Tenant-isolated: only display reservations belonging to manager's assigned restaurant
+    final all = resState.reservations.where((r) {
+      if (managedId != null && managedId.isNotEmpty) {
+        return r.restaurantId == managedId;
+      }
+      return true;
+    }).toList();
     final filtered = all.where((r) {
       if (_filter == 'All') return true;
       if (_filter == 'Confirmed') return r.status == ReservationStatus.confirmed;

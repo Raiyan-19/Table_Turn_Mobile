@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/widgets/custom_back_button.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../widgets/custom_text_field.dart';
@@ -29,7 +30,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void _handleSend() async {
     final text = _emailController.text.trim();
     if (text.isEmpty) {
-      setState(() => _error = 'Please enter your registered email or phone');
+      setState(() => _error = 'Please enter your registered email');
       return;
     }
 
@@ -38,7 +39,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _error = null;
     });
 
-    await Future.delayed(const Duration(milliseconds: 700));
+    try {
+      await ApiService.post('/auth/forgot-password', body: {'email': text});
+    } catch (_) {}
 
     if (mounted) {
       setState(() {

@@ -7,6 +7,8 @@ import '../../../core/mock/mock_data.dart';
 import '../../../core/models/reservation_model.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../home/providers/restaurant_provider.dart';
 import '../../reservation/providers/reservation_provider.dart';
 
 class ManagerDashboardScreen extends ConsumerWidget {
@@ -16,9 +18,26 @@ class ManagerDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final resState = ref.watch(reservationProvider);
     final resNotifier = ref.read(reservationProvider.notifier);
+    final authState = ref.watch(authProvider);
+    final restState = ref.watch(restaurantProvider);
 
-    final restaurant = MockData.restaurants.first; // The Forest Lounge
-    final reservations = resState.reservations;
+    final currentManager = authState.currentUser;
+    final managedId = currentManager?.managedRestaurantId;
+
+    final restaurant = restState.allRestaurants.firstWhere(
+      (r) => r.id == managedId,
+      orElse: () => restState.allRestaurants.isNotEmpty
+          ? restState.allRestaurants.first
+          : MockData.restaurants.first,
+    );
+
+    // Tenant-isolated reservations: Manager only accesses their assigned restaurant
+    final reservations = resState.reservations.where((r) {
+      if (managedId != null && managedId.isNotEmpty) {
+        return r.restaurantId == managedId;
+      }
+      return true;
+    }).toList();
     final confirmedCount = reservations.where((r) => r.status == ReservationStatus.confirmed).length;
     final checkedInCount = reservations.where((r) => r.status == ReservationStatus.checkedIn).length;
     final seatedCount = reservations.where((r) => r.status == ReservationStatus.seated).length;

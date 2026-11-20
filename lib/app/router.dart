@@ -39,14 +39,27 @@ GoRouter createAppRouter([Ref? ref]) {
       final authState = ref.read(authProvider);
       final location = state.matchedLocation;
       final role = authState.currentRole;
+      final isAuthenticated = authState.isAuthenticated;
+
+      // Unauthenticated attempts to access protected manager or admin routes
+      if (!isAuthenticated) {
+        if (location.startsWith('/admin') || location.startsWith('/manager')) {
+          return '/sign-in';
+        }
+      }
 
       // Route authorization guard: Protect admin endpoints
       if (location.startsWith('/admin') && role != UserRole.admin) {
-        return '/home';
+        return isAuthenticated && role == UserRole.manager
+            ? '/manager-dashboard'
+            : '/home';
       }
+
       // Route authorization guard: Protect manager endpoints
       if (location.startsWith('/manager') && role != UserRole.manager) {
-        return '/home';
+        return isAuthenticated && role == UserRole.admin
+            ? '/admin-dashboard'
+            : '/home';
       }
       return null;
     },
