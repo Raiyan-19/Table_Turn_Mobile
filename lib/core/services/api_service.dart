@@ -31,16 +31,8 @@ class ApiService {
     if (envUrl.isNotEmpty) {
       return envUrl.endsWith('/') ? envUrl.substring(0, envUrl.length - 1) : envUrl;
     }
-    if (kIsWeb) {
-      return 'http://localhost:5000/api';
-    }
-    try {
-      if (Platform.isAndroid) {
-        // Standard Android emulator loopback alias to host machine
-        return 'http://10.0.2.2:5000/api';
-      }
-    } catch (_) {}
-    return 'http://localhost:5000/api';
+    // Default production Render backend URL
+    return 'https://tableturn-api-k533.onrender.com/api';
   }
 
   static bool _isTestMode() {
